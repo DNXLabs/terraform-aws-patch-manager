@@ -1,7 +1,7 @@
-# terraform-aws-template
+# terraform-aws-patch-manager
 
-[![Lint Status](https://github.com/DNXLabs/terraform-aws-template/workflows/Lint/badge.svg)](https://github.com/DNXLabs/terraform-aws-template/actions)
-[![LICENSE](https://img.shields.io/github/license/DNXLabs/terraform-aws-template)](https://github.com/DNXLabs/terraform-aws-template/blob/master/LICENSE)
+[![Lint Status](https://github.com/DNXLabs/terraform-aws-patch-manager/workflows/Lint/badge.svg)](https://github.com/DNXLabs/terraform-aws-patch-manager/actions)
+[![LICENSE](https://img.shields.io/github/license/DNXLabs/terraform-aws-patch-manager)](https://github.com/DNXLabs/terraform-aws-patch-manager/blob/master/LICENSE)
 
 <!--- BEGIN_TF_DOCS --->
 
