@@ -1,65 +1,3 @@
-resource "aws_cloudwatch_log_group" "patch_approval" {
-  count             = var.approval_process_schedule != "" ? 1 : 0
-  name              = "/aws/sfn/${var.name}-patch-approval-logs"
-  retention_in_days = 90
-}
-
-resource "aws_iam_role" "patch_approval" {
-  count               = var.approval_process_schedule != "" ? 1 : 0
-  name                = "${var.name}-patch-approval-role"
-  managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
-  path                = "/service-role/"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "states.amazonaws.com"
-        }
-      },
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "scheduler.amazonaws.com"
-        }
-      },
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  inline_policy {
-    name = "sfn-access"
-    policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Action = [
-            "logs:DescribeLogGroups",
-            "ssm:PutParameter",
-            "ssm:GetParameter",
-            "ssm:UpdateMaintenanceWindow",
-            "lambda:InvokeFunction",
-            "sns:Publish",
-            "states:*"
-          ]
-          Effect   = "Allow"
-          Resource = "*"
-        }
-      ]
-    })
-  }
-}
-
-
 # State machine
 data "template_file" "patch_approval" {
   count    = var.approval_process_schedule != "" ? 1 : 0
@@ -76,7 +14,7 @@ data "template_file" "patch_approval" {
 resource "aws_sfn_state_machine" "patch_approval" {
   count    = var.approval_process_schedule != "" ? 1 : 0
   name     = "${var.name}-patch-approval-sfn"
-  role_arn = aws_iam_role.patch_approval[0].arn
+  role_arn = aws_iam_role.patch_approval_sfn[0].arn
 
   logging_configuration {
     log_destination        = "${aws_cloudwatch_log_group.patch_approval[0].arn}:*"
@@ -103,7 +41,7 @@ resource "aws_lambda_function" "patch_approval_request" {
   count            = var.approval_process_schedule != "" ? 1 : 0
   filename         = data.archive_file.patch_approval_request[0].output_path
   function_name    = "${var.name}-patch-approval-request"
-  role             = aws_iam_role.patch_approval[0].arn
+  role             = aws_iam_role.patch_approval_lambda[0].arn
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.11"
   timeout          = 60
@@ -132,7 +70,7 @@ resource "aws_lambda_function" "patch_approval_run" {
   count            = var.approval_process_schedule != "" ? 1 : 0
   filename         = data.archive_file.patch_approval_run[0].output_path
   function_name    = "${var.name}-patch-approval-run"
-  role             = aws_iam_role.patch_approval[0].arn
+  role             = aws_iam_role.patch_approval_lambda[0].arn
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.11"
   timeout          = 60
@@ -172,6 +110,6 @@ resource "aws_scheduler_schedule" "patch_approval" {
 
   target {
     arn      = aws_sfn_state_machine.patch_approval[0].arn
-    role_arn = aws_iam_role.patch_approval[0].arn
+    role_arn = aws_iam_role.patch_approval_scheduler[0].arn
   }
 }
