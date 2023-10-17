@@ -25,7 +25,7 @@ In addition you have the option to create or not :
 
 ```hcl
 module "patch_manager" {
-  # source               = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.5.0"
+  source               = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.5.0"
 
   enabled            = true
   name               = "windows-patching"
