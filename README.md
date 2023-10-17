@@ -3,6 +3,45 @@
 [![Lint Status](https://github.com/DNXLabs/terraform-aws-patch-manager/workflows/Lint/badge.svg)](https://github.com/DNXLabs/terraform-aws-patch-manager/actions)
 [![LICENSE](https://img.shields.io/github/license/DNXLabs/terraform-aws-patch-manager)](https://github.com/DNXLabs/terraform-aws-patch-manager/blob/master/LICENSE)
 
+This terraform module set up Systems Manager Patch Manager in AWS.
+
+The following resources will be created:
+- CloudWatch Log Groups
+- IAM roles
+- Document for Session Manager configuration
+- Fleet Manager configuration
+- Patch Baseline
+- Inventory configuration
+- Patch Manager configuration
+
+In addition you have the option to create or not :
+ - Patch Manager Install approval
+     - Step Function
+     - Event Bridge scheduler
+     - SNS Topic
+     - Lambda function
+
+## Usage
+
+```hcl
+module "patch_manager" {
+  # source               = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.5.0"
+
+  enabled            = true
+  name               = "windows-patching"
+  target_value       = ["windows-server"]
+  session_encryption = true
+  scan_schedule      = "cron(0 23 ? * SAT *)" # Every Saturday at 11pm
+  scan_duration      = 5
+
+  install_schedule = "cron(0 23 ? * SUN *)" # Every Sunday at 11pm
+  install_duration = 5
+
+  approval_process_schedule = "cron(0 8 ? * TUE *)" # Every Tuesday at 8am
+  approval_process_timeout  = 345600 # 4 days
+}
+```
+
 <!--- BEGIN_TF_DOCS --->
 
 ## Requirements
