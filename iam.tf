@@ -23,6 +23,17 @@ resource "aws_iam_role" "patch_approval_sfn" {
         {
           Action = [
             "logs:DescribeLogGroups",
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "logs:CreateLogDelivery",
+            "logs:GetLogDelivery",
+            "logs:ListLogDeliveries",
+            "logs:UpdateLogDelivery",
+            "logs:DescribeResourcePolicies",
+            "logs:PutResourcePolicy",
+            "logs:PutDestination",
+            "logs:PutDestinationPolicy",
             "ssm:PutParameter",
             "ssm:GetParameter",
             "ssm:UpdateMaintenanceWindow",
