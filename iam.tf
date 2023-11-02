@@ -123,3 +123,40 @@ resource "aws_iam_role" "patch_approval_lambda" {
     })
   }
 }
+
+resource "aws_iam_role" "maintenance_window_task" {
+  count = var.enabled ? 1 : 0
+  name  = "${var.name}-maintenance-window-task-role"
+  path  = "/service-role/"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ssm.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  inline_policy {
+    name = "custom-access"
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = [
+            "sns:CreateTopic",
+            "sns:ListTopics",
+            "sns:SetTopicAttributes",
+            "sns:Publish"
+          ]
+          Effect   = "Allow"
+          Resource = "arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+        }
+      ]
+    })
+  }
+}
