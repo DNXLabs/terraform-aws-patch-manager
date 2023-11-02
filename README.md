@@ -79,6 +79,8 @@ module "patch_manager" {
 | install\_schedule | The schedule for the patch baseline scan | `string` | `""` | no |
 | install\_timezone | The schedule timezone for the patch baseline scan | `string` | `"Australia/Melbourne"` | no |
 | name | The name of the patch baseline | `string` | n/a | yes |
+| notification\_arn | The SNS topic ARN for notifications | `string` | `""` | no |
+| notification\_events | The list of notification events | `list(string)` | `[]` | no |
 | operating\_system | The operating system for the patch baseline | `string` | `"WINDOWS"` | no |
 | rejected\_patches | The list of rejected patches | `list(string)` | `[]` | no |
 | scan\_cutoff | The cutoff for the patch baseline scan | `number` | `1` | no |
