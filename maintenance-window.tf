@@ -69,10 +69,20 @@ resource "aws_ssm_maintenance_window_task" "patch_baseline_scan" {
     run_command_parameters {
       document_version = "$LATEST"
       timeout_seconds  = 600
+      service_role_arn = aws_iam_role.maintenance_window_task[0].arn
 
       cloudwatch_config {
         cloudwatch_output_enabled = true
         cloudwatch_log_group_name = aws_cloudwatch_log_group.patch_baseline_scan[0].name
+      }
+
+      dynamic "notification_config" {
+        for_each = length(var.notification_events) > 0 ? [1] : []
+        content {
+          notification_arn    = var.notification_arn != "" ? var.notification_arn : aws_sns_topic.window_task_notification[0].arn
+          notification_events = var.notification_events
+          notification_type   = "Command"
+        }
       }
 
       parameter {
@@ -102,10 +112,20 @@ resource "aws_ssm_maintenance_window_task" "patch_baseline_install" {
     run_command_parameters {
       document_version = "$LATEST"
       timeout_seconds  = 600
+      service_role_arn = aws_iam_role.maintenance_window_task[0].arn
 
       cloudwatch_config {
         cloudwatch_output_enabled = true
         cloudwatch_log_group_name = aws_cloudwatch_log_group.patch_baseline_install[0].name
+      }
+
+      dynamic "notification_config" {
+        for_each = length(var.notification_events) > 0 ? [1] : []
+        content {
+          notification_arn    = var.notification_arn != "" ? var.notification_arn : aws_sns_topic.window_task_notification[0].arn
+          notification_events = var.notification_events
+          notification_type   = "Command"
+        }
       }
 
       parameter {

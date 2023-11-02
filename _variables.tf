@@ -57,6 +57,18 @@ variable "severity" {
   description = "The list of patch severities"
 }
 
+variable "notification_arn" {
+  type        = string
+  default     = ""
+  description = "The SNS topic ARN for notifications"
+}
+
+variable "notification_events" {
+  type        = list(string)
+  default     = []
+  description = "The list of notification events"
+}
+
 variable "scan_schedule" {
   type        = string
   default     = ""
