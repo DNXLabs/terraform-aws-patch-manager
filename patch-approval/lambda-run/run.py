@@ -7,7 +7,7 @@ sfn_arn = os.environ.get('SFN_ARN')
 def check_execution(name):
     client = boto3.client('stepfunctions')
     states = client.list_executions(
-      stateMachineArn="arn:aws:states:ap-southeast-2:281902667290:stateMachine:labs-patch-approval-sfn",
+      stateMachineArn=sfn_arn,
       statusFilter='RUNNING',
     )
     executionARN = states['executions'][0]['name']
