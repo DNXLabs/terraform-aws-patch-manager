@@ -1,14 +1,9 @@
 # State machine
-data "template_file" "patch_approval" {
-  count    = var.approval_process_schedule != "" ? 1 : 0
-  template = file("${path.module}/patch-approval/step-function.json.tpl")
-  vars = {
-    topic_arn          = aws_sns_topic.patch_approval[0].arn
-    function_arn       = "${aws_lambda_function.patch_approval_request[0].arn}:$LATEST"
-    function_url       = aws_lambda_function_url.patch_approval_run[0].function_url
-    timeout_seconds    = var.approval_process_timeout
-    maintenance_window = aws_ssm_maintenance_window.patch_baseline_install[0].id
-  }
+locals {
+  # Get all install maintenance window IDs for approval process
+  install_window_ids = length(local.install_windows) > 0 ? [
+    for k, v in aws_ssm_maintenance_window.patch_baseline_install : v.id
+  ] : []
 }
 
 resource "aws_sfn_state_machine" "patch_approval" {
@@ -22,7 +17,13 @@ resource "aws_sfn_state_machine" "patch_approval" {
     level                  = "ALL"
   }
 
-  definition = data.template_file.patch_approval[0].rendered
+  definition = templatefile("${path.module}/patch-approval/step-function.json.tpl", {
+    topic_arn             = aws_sns_topic.patch_approval[0].arn
+    function_arn          = "${aws_lambda_function.patch_approval_request[0].arn}:$LATEST"
+    function_url          = aws_lambda_function_url.patch_approval_run[0].function_url
+    timeout_seconds       = var.approval_process_timeout
+    maintenance_windows   = local.install_window_ids
+  })
 }
 
 # Lambda functions

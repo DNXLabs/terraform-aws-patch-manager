@@ -23,6 +23,8 @@ In addition you have the option to create or not :
 
 ## Usage
 
+### Basic Usage (Legacy - Single Maintenance Window)
+
 ```hcl
 module "patch_manager" {
   source               = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.8.0"
@@ -41,6 +43,80 @@ module "patch_manager" {
   approval_process_timeout  = 345600 # 4 days
 }
 ```
+
+### Advanced Usage (Multiple Maintenance Windows)
+
+```hcl
+module "patch_manager" {
+  source               = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.8.0"
+
+  enabled            = true
+  name               = "windows-patching"
+  target_value       = ["windows-server"]
+  session_encryption = true
+
+  # Multiple scan maintenance windows
+  scan_maintenance_windows = [
+    {
+      name            = "weekend-scan-1"
+      schedule        = "cron(0 23 ? * SAT *)" # Every Saturday at 11pm
+      timezone        = "Australia/Melbourne"
+      duration        = 5
+      cutoff          = 1
+      max_concurrency = "20%"
+      max_errors      = "20%"
+    },
+    {
+      name            = "weekend-scan-2"
+      schedule        = "cron(0 1 ? * SUN *)" # Every Sunday at 1am
+      timezone        = "Australia/Melbourne"
+      duration        = 3
+      cutoff          = 1
+      max_concurrency = "10%"
+      max_errors      = "10%"
+    }
+  ]
+
+  # Multiple install maintenance windows
+  install_maintenance_windows = [
+    {
+      name            = "weekend-install-1"
+      schedule        = "cron(0 23 ? * SUN *)" # Every Sunday at 11pm
+      timezone        = "Australia/Melbourne"
+      duration        = 5
+      cutoff          = 1
+      max_concurrency = "10%"
+      max_errors      = "10%"
+      reboot_option   = "NoReboot"
+    },
+    {
+      name            = "weekend-install-2"
+      schedule        = "cron(0 2 ? * MON *)" # Every Monday at 2am
+      timezone        = "Australia/Melbourne"
+      duration        = 4
+      cutoff          = 1
+      max_concurrency = "5%"
+      max_errors      = "5%"
+      reboot_option   = "RebootIfNeeded"
+    }
+  ]
+
+  approval_process_schedule = "cron(0 8 ? * TUE *)" # Every Tuesday at 8am
+  approval_process_timeout  = 345600 # 4 days
+}
+```
+
+### Migration from Legacy Variables
+
+The module maintains backward compatibility with the legacy single maintenance window variables. However, it's recommended to migrate to the new `scan_maintenance_windows` and `install_maintenance_windows` variables for better flexibility and future-proofing.
+
+**Legacy variables (deprecated but still supported):**
+- `scan_schedule`, `scan_timezone`, `scan_duration`, `scan_cutoff`, `scan_max_concurrency`, `scan_max_errors`
+- `install_schedule`, `install_timezone`, `install_duration`, `install_cutoff`, `install_max_concurrency`, `install_max_errors`, `install_reboot_option`
+
+**New variables:**
+- `scan_maintenance_windows` - List of scan maintenance window configurations
+- `install_maintenance_windows` - List of install maintenance window configurations
 
 <!--- BEGIN_TF_DOCS --->
 

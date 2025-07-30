@@ -1,17 +1,34 @@
 {
-  "Comment": "Patch Manager Approval Workflow",
-  "StartAt": "Disable Patch Install",
+  "Comment": "Patch Manager Approval Workflow - Multiple Maintenance Windows",
+  "StartAt": "Disable All Install Windows",
   "States": {
-    "Disable Patch Install": {
-      "Type": "Task",
-      "Parameters": {
-        "WindowId": "${maintenance_window}",
-        "Enabled": false
+    "Disable All Install Windows": {
+      "Type": "Map",
+      "ItemsPath": "$.maintenance_windows",
+      "MaxConcurrency": 10,
+      "Iterator": {
+        "StartAt": "Disable Window",
+        "States": {
+          "Disable Window": {
+            "Type": "Task",
+            "Parameters": {
+              "WindowId.$": "$",
+              "Enabled": false
+            },
+            "Resource": "arn:aws:states:::aws-sdk:ssm:updateMaintenanceWindow",
+            "End": true,
+            "ResultSelector": {
+              "window_id.$": "$.WindowId"
+            }
+          }
+        }
       },
-      "Resource": "arn:aws:states:::aws-sdk:ssm:updateMaintenanceWindow",
       "Next": "Request Approval",
-      "ResultSelector": {
-        "window_id.$": "$.WindowId"
+      "InputTransformer": {
+        "PathsMap": {},
+        "InputTemplate": {
+          "maintenance_windows": ${jsonencode(maintenance_windows)}
+        }
       }
     },
     "Request Approval": {
@@ -23,7 +40,7 @@
           "topic_arn": "${topic_arn}",
           "url": "${function_url}",
           "execution.$": "$$.Execution.Name",
-          "window_id.$": "$.window_id",
+          "maintenance_windows": ${jsonencode(maintenance_windows)},
           "token.$": "$$.Task.Token"
         }
       },
@@ -52,28 +69,48 @@
       ],
       "TimeoutSeconds": ${timeout_seconds},
       "ResultPath": null,
-      "Next": "Enable Patch Install"
+      "Next": "Enable All Install Windows"
     },
-    "Enable Patch Install": {
-      "Type": "Task",
-      "Parameters": {
-        "WindowId.$": "$.window_id",
-        "Enabled": true
+    "Enable All Install Windows": {
+      "Type": "Map",
+      "ItemsPath": "$.maintenance_windows",
+      "MaxConcurrency": 10,
+      "Iterator": {
+        "StartAt": "Enable Window",
+        "States": {
+          "Enable Window": {
+            "Type": "Task",
+            "Parameters": {
+              "WindowId.$": "$",
+              "Enabled": true
+            },
+            "Resource": "arn:aws:states:::aws-sdk:ssm:updateMaintenanceWindow",
+            "End": true,
+            "ResultSelector": {
+              "window_id.$": "$.WindowId"
+            }
+          }
+        }
       },
-      "Resource": "arn:aws:states:::aws-sdk:ssm:updateMaintenanceWindow",
+      "InputTransformer": {
+        "PathsMap": {},
+        "InputTemplate": {
+          "maintenance_windows": ${jsonencode(maintenance_windows)}
+        }
+      },
       "Next": "Approval Success"
     },
     "Approval Success": {
       "Type": "Pass",
       "Next": "SNS Publish Result",
       "Result": {
-        "message": "Approval process success"
+        "message": "Approval process success - All maintenance windows enabled"
       }
     },
     "Approval Timeout": {
       "Type": "Pass",
       "Result": {
-        "message": "Approval process timeout"
+        "message": "Approval process timeout - Maintenance windows remain disabled"
       },
       "End": true
     },

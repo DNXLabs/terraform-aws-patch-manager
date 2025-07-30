@@ -1,16 +1,18 @@
-#Cloudwatch log group
+#Cloudwatch log group for scan operations
 resource "aws_cloudwatch_log_group" "patch_baseline_scan" {
-  count             = var.scan_schedule != "" ? 1 : 0
-  name              = "/aws/ssm/${var.name}-patch-baseline-scan"
+  for_each          = { for idx, window in local.scan_windows : idx => window }
+  name              = "/aws/ssm/${var.name}-patch-baseline-scan-${each.value.name}"
   retention_in_days = 365
 }
 
+#Cloudwatch log group for install operations
 resource "aws_cloudwatch_log_group" "patch_baseline_install" {
-  count             = var.install_schedule != "" ? 1 : 0
-  name              = "/aws/ssm/${var.name}-patch-baseline-install"
+  for_each          = { for idx, window in local.install_windows : idx => window }
+  name              = "/aws/ssm/${var.name}-patch-baseline-install-${each.value.name}"
   retention_in_days = 365
 }
 
+#Cloudwatch log group for patch approval
 resource "aws_cloudwatch_log_group" "patch_approval" {
   count             = var.approval_process_schedule != "" ? 1 : 0
   name              = "/aws/sfn/${var.name}-patch-approval-logs"
