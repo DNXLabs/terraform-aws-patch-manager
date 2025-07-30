@@ -23,6 +23,8 @@ In addition you have the option to create or not :
 
 ## Usage
 
+### Single Schedule (Legacy - Still Supported)
+
 ```hcl
 module "patch_manager" {
   source               = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.8.0"
@@ -41,6 +43,87 @@ module "patch_manager" {
   approval_process_timeout  = 345600 # 4 days
 }
 ```
+
+### Multiple Schedules (New Feature)
+
+```hcl
+module "patch_manager_multiple" {
+  source = "git::https://github.com/DNXLabs/terraform-aws-patch-manager.git?ref=0.9.0"
+
+  enabled      = true
+  name         = "multi-schedule-patching"
+  target_value = ["web-servers", "db-servers"]
+
+  # Multiple scan schedules - second and fourth Sundays
+  scan_schedules = [
+    {
+      name            = "second-sunday"
+      schedule        = "cron(0 2 ? * SUN#2 *)"  # 2 AM on second Sunday
+      timezone        = "Australia/Melbourne"
+      duration        = 4
+      cutoff          = 1
+      max_concurrency = "25%"
+      max_errors      = "15%"
+    },
+    {
+      name            = "fourth-sunday"
+      schedule        = "cron(0 2 ? * SUN#4 *)"  # 2 AM on fourth Sunday
+      timezone        = "Australia/Melbourne"
+      duration        = 4
+      cutoff          = 1
+      max_concurrency = "25%"
+      max_errors      = "15%"
+    }
+  ]
+
+  # Multiple install schedules
+  install_schedules = [
+    {
+      name            = "second-sunday-install"
+      schedule        = "cron(0 4 ? * SUN#2 *)"  # 4 AM on second Sunday
+      timezone        = "Australia/Melbourne"
+      duration        = 6
+      cutoff          = 2
+      max_concurrency = "15%"
+      max_errors      = "10%"
+      reboot_option   = "RebootIfNeeded"
+    },
+    {
+      name            = "fourth-sunday-install"
+      schedule        = "cron(0 4 ? * SUN#4 *)"  # 4 AM on fourth Sunday
+      timezone        = "Australia/Melbourne"
+      duration        = 6
+      cutoff          = 2
+      max_concurrency = "15%"
+      max_errors      = "10%"
+      reboot_option   = "RebootIfNeeded"
+    }
+  ]
+
+  operating_system = "WINDOWS"
+  classification   = ["CriticalUpdates", "SecurityUpdates", "Updates"]
+  severity         = ["Critical", "Important", "Moderate"]
+}
+```
+
+### Schedule Configuration Examples
+
+The module supports AWS cron expressions for flexible scheduling:
+
+- **Second Sunday of each month**: `cron(0 2 ? * SUN#2 *)`
+- **Fourth Sunday of each month**: `cron(0 2 ? * SUN#4 *)`
+- **First and third Saturdays**: Use two separate schedule objects
+- **Monthly on specific date**: `cron(0 2 15 * ? *)` (15th of each month)
+- **Quarterly**: `cron(0 2 1 */3 ? *)` (First day of every 3rd month)
+
+### Migration from Single to Multiple Schedules
+
+Existing configurations using single schedule variables (`scan_schedule`, `install_schedule`, etc.) will continue to work without changes. The module maintains full backward compatibility.
+
+To migrate to multiple schedules:
+1. Replace single schedule variables with `scan_schedules` and `install_schedules` lists
+2. Each schedule object can have its own configuration (timezone, duration, etc.)
+3. Update outputs to use the new map-based outputs if needed
 
 <!--- BEGIN_TF_DOCS --->
 

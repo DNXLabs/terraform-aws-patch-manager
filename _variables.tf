@@ -72,79 +72,108 @@ variable "notification_events" {
 variable "scan_schedule" {
   type        = string
   default     = ""
-  description = "The schedule for the patch baseline scan"
+  description = "The schedule for the patch baseline scan (deprecated - use scan_schedules for multiple schedules)"
+}
+
+variable "scan_schedules" {
+  type = list(object({
+    name            = string
+    schedule        = string
+    timezone        = optional(string, "Australia/Melbourne")
+    duration        = optional(number, 5)
+    cutoff          = optional(number, 1)
+    max_concurrency = optional(string, "20%")
+    max_errors      = optional(string, "20%")
+  }))
+  default     = []
+  description = "List of scan schedules with their configurations"
 }
 
 variable "scan_timezone" {
   type        = string
   default     = "Australia/Melbourne"
-  description = "The schedule timezone for the patch baseline scan"
+  description = "The schedule timezone for the patch baseline scan (deprecated - use scan_schedules)"
 }
 
 variable "scan_max_concurrency" {
   type        = string
   default     = "20%"
-  description = "The max concurrency for the patch baseline scan"
+  description = "The max concurrency for the patch baseline scan (deprecated - use scan_schedules)"
 }
 
 variable "scan_max_errors" {
   type        = string
   default     = "20%"
-  description = "The max errors for the patch baseline scan"
+  description = "The max errors for the patch baseline scan (deprecated - use scan_schedules)"
 }
 
 variable "scan_duration" {
   type        = number
   default     = 5
-  description = "The duration for the patch baseline scan"
+  description = "The duration for the patch baseline scan (deprecated - use scan_schedules)"
 }
 
 variable "scan_cutoff" {
   type        = number
   default     = 1
-  description = "The cutoff for the patch baseline scan"
+  description = "The cutoff for the patch baseline scan (deprecated - use scan_schedules)"
 }
 
 variable "install_schedule" {
   type        = string
   default     = ""
-  description = "The schedule for the patch baseline scan"
+  description = "The schedule for the patch baseline install (deprecated - use install_schedules for multiple schedules)"
+}
+
+variable "install_schedules" {
+  type = list(object({
+    name            = string
+    schedule        = string
+    timezone        = optional(string, "Australia/Melbourne")
+    duration        = optional(number, 5)
+    cutoff          = optional(number, 1)
+    max_concurrency = optional(string, "10%")
+    max_errors      = optional(string, "10%")
+    reboot_option   = optional(string, "NoReboot")
+  }))
+  default     = []
+  description = "List of install schedules with their configurations"
 }
 
 variable "install_timezone" {
   type        = string
   default     = "Australia/Melbourne"
-  description = "The schedule timezone for the patch baseline scan"
+  description = "The schedule timezone for the patch baseline install (deprecated - use install_schedules)"
 }
 
 variable "install_duration" {
   type        = number
   default     = 5
-  description = "The duration for the patch baseline scan"
+  description = "The duration for the patch baseline install (deprecated - use install_schedules)"
 }
 
 variable "install_cutoff" {
   type        = number
   default     = 1
-  description = "The cutoff for the patch baseline scan"
+  description = "The cutoff for the patch baseline install (deprecated - use install_schedules)"
 }
 
 variable "install_max_concurrency" {
   type        = string
   default     = "10%"
-  description = "The max concurrency for the patch baseline scan"
+  description = "The max concurrency for the patch baseline install (deprecated - use install_schedules)"
 }
 
 variable "install_max_errors" {
   type        = string
   default     = "10%"
-  description = "The max errors for the patch baseline scan"
+  description = "The max errors for the patch baseline install (deprecated - use install_schedules)"
 }
 
 variable "install_reboot_option" {
   type        = string
   default     = "NoReboot"
-  description = "The reboot option for the patch baseline scan"
+  description = "The reboot option for the patch baseline install (deprecated - use install_schedules)"
 }
 
 variable "approval_process_schedule" {
