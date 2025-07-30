@@ -1,20 +1,20 @@
 #Maintenance windows
 resource "aws_ssm_maintenance_window" "patch_baseline_scan" {
-  count             = var.scan_schedule != "" ? 1 : 0
-  name              = "${var.name}-maintenance-window-scan"
-  schedule          = var.scan_schedule
-  schedule_timezone = var.scan_timezone
-  duration          = var.scan_duration
-  cutoff            = var.scan_cutoff
+  for_each          = { for idx, schedule in local.scan_schedules_combined : idx => schedule }
+  name              = "${var.name}-maintenance-window-scan-${each.value.name}"
+  schedule          = each.value.schedule
+  schedule_timezone = each.value.timezone
+  duration          = each.value.duration
+  cutoff            = each.value.cutoff
 }
 
 resource "aws_ssm_maintenance_window" "patch_baseline_install" {
-  count             = var.install_schedule != "" ? 1 : 0
-  name              = "${var.name}-maintenance-window-install"
-  schedule          = var.install_schedule
-  schedule_timezone = var.install_timezone
-  duration          = var.install_duration
-  cutoff            = var.install_cutoff
+  for_each          = { for idx, schedule in local.install_schedules_combined : idx => schedule }
+  name              = "${var.name}-maintenance-window-install-${each.value.name}"
+  schedule          = each.value.schedule
+  schedule_timezone = each.value.timezone
+  duration          = each.value.duration
+  cutoff            = each.value.cutoff
   enabled           = var.approval_process_schedule != "" ? false : true # keep disabled for approval process
 
   lifecycle {
@@ -24,10 +24,10 @@ resource "aws_ssm_maintenance_window" "patch_baseline_install" {
 
 #Maintenance window target via tag
 resource "aws_ssm_maintenance_window_target" "patch_baseline_scan" {
-  count         = var.scan_schedule != "" ? 1 : 0
-  window_id     = aws_ssm_maintenance_window.patch_baseline_scan[0].id
-  name          = "${var.name}-scan-target"
-  description   = "This is a maintenance window scan target for ${var.name}"
+  for_each      = { for idx, schedule in local.scan_schedules_combined : idx => schedule }
+  window_id     = aws_ssm_maintenance_window.patch_baseline_scan[each.key].id
+  name          = "${var.name}-scan-target-${each.value.name}"
+  description   = "This is a maintenance window scan target for ${var.name} - ${each.value.name}"
   resource_type = "INSTANCE"
 
   targets {
@@ -37,10 +37,10 @@ resource "aws_ssm_maintenance_window_target" "patch_baseline_scan" {
 }
 
 resource "aws_ssm_maintenance_window_target" "patch_baseline_install" {
-  count         = var.install_schedule != "" ? 1 : 0
-  window_id     = aws_ssm_maintenance_window.patch_baseline_install[0].id
-  name          = "${var.name}-install-target"
-  description   = "This is a maintenance window install target for ${var.name}"
+  for_each      = { for idx, schedule in local.install_schedules_combined : idx => schedule }
+  window_id     = aws_ssm_maintenance_window.patch_baseline_install[each.key].id
+  name          = "${var.name}-install-target-${each.value.name}"
+  description   = "This is a maintenance window install target for ${var.name} - ${each.value.name}"
   resource_type = "INSTANCE"
 
   targets {
@@ -51,18 +51,18 @@ resource "aws_ssm_maintenance_window_target" "patch_baseline_install" {
 
 # Command task (AWS-RunPatchBaseline) associated to the maintenance window
 resource "aws_ssm_maintenance_window_task" "patch_baseline_scan" {
-  count           = var.scan_schedule != "" ? 1 : 0
-  name            = "${var.name}-patch-baseline-scan"
-  max_concurrency = var.scan_max_concurrency
-  max_errors      = var.scan_max_errors
+  for_each        = { for idx, schedule in local.scan_schedules_combined : idx => schedule }
+  name            = "${var.name}-patch-baseline-scan-${each.value.name}"
+  max_concurrency = each.value.max_concurrency
+  max_errors      = each.value.max_errors
   priority        = 1
   task_arn        = "AWS-RunPatchBaseline"
   task_type       = "RUN_COMMAND"
-  window_id       = aws_ssm_maintenance_window.patch_baseline_scan[0].id
+  window_id       = aws_ssm_maintenance_window.patch_baseline_scan[each.key].id
 
   targets {
     key    = "WindowTargetIds"
-    values = [aws_ssm_maintenance_window_target.patch_baseline_scan[0].id]
+    values = [aws_ssm_maintenance_window_target.patch_baseline_scan[each.key].id]
   }
 
   task_invocation_parameters {
@@ -73,7 +73,7 @@ resource "aws_ssm_maintenance_window_task" "patch_baseline_scan" {
 
       cloudwatch_config {
         cloudwatch_output_enabled = true
-        cloudwatch_log_group_name = aws_cloudwatch_log_group.patch_baseline_scan[0].name
+        cloudwatch_log_group_name = aws_cloudwatch_log_group.patch_baseline_scan[each.key].name
       }
 
       dynamic "notification_config" {
@@ -94,18 +94,18 @@ resource "aws_ssm_maintenance_window_task" "patch_baseline_scan" {
 }
 
 resource "aws_ssm_maintenance_window_task" "patch_baseline_install" {
-  count           = var.install_schedule != "" ? 1 : 0
-  name            = "${var.name}-patch-baseline-install"
-  max_concurrency = var.install_max_concurrency
-  max_errors      = var.install_max_errors
+  for_each        = { for idx, schedule in local.install_schedules_combined : idx => schedule }
+  name            = "${var.name}-patch-baseline-install-${each.value.name}"
+  max_concurrency = each.value.max_concurrency
+  max_errors      = each.value.max_errors
   priority        = 1
   task_arn        = "AWS-RunPatchBaseline"
   task_type       = "RUN_COMMAND"
-  window_id       = aws_ssm_maintenance_window.patch_baseline_install[0].id
+  window_id       = aws_ssm_maintenance_window.patch_baseline_install[each.key].id
 
   targets {
     key    = "WindowTargetIds"
-    values = [aws_ssm_maintenance_window_target.patch_baseline_install[0].id]
+    values = [aws_ssm_maintenance_window_target.patch_baseline_install[each.key].id]
   }
 
   task_invocation_parameters {
@@ -116,7 +116,7 @@ resource "aws_ssm_maintenance_window_task" "patch_baseline_install" {
 
       cloudwatch_config {
         cloudwatch_output_enabled = true
-        cloudwatch_log_group_name = aws_cloudwatch_log_group.patch_baseline_install[0].name
+        cloudwatch_log_group_name = aws_cloudwatch_log_group.patch_baseline_install[each.key].name
       }
 
       dynamic "notification_config" {
@@ -134,7 +134,7 @@ resource "aws_ssm_maintenance_window_task" "patch_baseline_install" {
       }
       parameter {
         name   = "RebootOption"
-        values = [var.install_reboot_option]
+        values = [each.value.reboot_option]
       }
     }
   }
