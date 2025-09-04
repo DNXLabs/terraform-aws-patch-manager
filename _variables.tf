@@ -193,3 +193,9 @@ variable "approval_process_timeout" {
   default     = 86400
   description = "The timeout in seconds for the approval process"
 }
+
+variable "log_retention_in_days" {
+  type        = number
+  default     = 365
+  description = "The retention period for CloudWatch logs in days"
+}
