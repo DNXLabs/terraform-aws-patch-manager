@@ -1,40 +1,53 @@
+import json
 import boto3
-import logging
-from botocore.config import Config
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logging.getLogger("boto3").setLevel(logging.WARNING)
-logging.getLogger("botocore").setLevel(logging.WARNING)
-
-config = Config(
-    region_name='ap-southeast-2',
-    retries=dict(
-        max_attempts=10
-    )
-)
+import os
+from datetime import datetime
 
 def lambda_handler(event, context):
-    print(event)
+    """
+    Lambda function to handle patch approval requests
+    """
     
-    topic_arn = event['topic_arn']
-    lambda_url = event['url']
-    execution_id = event['execution']
-    
-    client = boto3.client('sns', config=config,)
+    # Initialize clients
+    sns = boto3.client('sns')
     
     try:
-        client.publish(
-            TopicArn=topic_arn,
-            Subject="Patching Manager Approval Request",
-            Message=f"""
-            In order to authorize the next finPower production servers patching, please click on the link provided below"
-            
-            {lambda_url}?key={execution_id}
-            """
-        )
-        logger.info('Patching Manager Approval Request sent to SNS topic')
-        return { 'statusCode': 200 }
+        # Extract information from the event
+        patch_group = event.get('patch_group', 'Unknown')
+        maintenance_window = event.get('maintenance_window', 'Unknown')
+        
+        # Create approval request message
+        message = {
+            'patch_group': patch_group,
+            'maintenance_window': maintenance_window,
+            'timestamp': datetime.utcnow().isoformat(),
+            'status': 'pending_approval'
+        }
+        
+        # Send notification if SNS topic is configured
+        topic_arn = os.environ.get('SNS_TOPIC_ARN')
+        if topic_arn:
+            sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message, indent=2),
+                Subject=f'Patch Approval Request - {patch_group}'
+            )
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'message': 'Patch approval request processed successfully',
+                'patch_group': patch_group,
+                'maintenance_window': maintenance_window
+            })
+        }
+        
     except Exception as e:
-        logger.error('Error sent to SNS topic: %s' % e)
-        return { 'statusCode': 500 }
+        print(f"Error processing patch approval request: {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'error': 'Failed to process patch approval request',
+                'details': str(e)
+            })
+        }

@@ -1,88 +1,94 @@
 {
-  "Comment": "Patch Manager Approval Workflow",
-  "StartAt": "Disable Patch Install",
+  "Comment": "AWS Systems Manager Patch Approval Workflow",
+  "StartAt": "RequestApproval",
   "States": {
-    "Disable Patch Install": {
+    "RequestApproval": {
       "Type": "Task",
-      "Parameters": {
-        "WindowId": "${maintenance_window}",
-        "Enabled": false
-      },
-      "Resource": "arn:aws:states:::aws-sdk:ssm:updateMaintenanceWindow",
-      "Next": "Request Approval",
-      "ResultSelector": {
-        "window_id.$": "$.WindowId"
-      }
-    },
-    "Request Approval": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
         "FunctionName": "${function_arn}",
         "Payload": {
-          "topic_arn": "${topic_arn}",
-          "url": "${function_url}",
-          "execution.$": "$$.Execution.Name",
-          "window_id.$": "$.window_id",
-          "token.$": "$$.Task.Token"
+          "patch_group.$": "$.patch_group",
+          "maintenance_window.$": "$.maintenance_window",
+          "request_type": "approval_request"
         }
       },
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 60,
-          "MaxAttempts": 2,
-          "BackoffRate": 2
-        }
-      ],
-      "Catch": [
-        {
-          "ErrorEquals": [
-            "States.Timeout"
-          ],
-          "Next": "Approval Timeout",
-          "Comment": "Timeout",
-          "ResultPath": "$.error"
-        }
-      ],
-      "TimeoutSeconds": ${timeout_seconds},
-      "ResultPath": null,
-      "Next": "Enable Patch Install"
+      "ResultPath": "$.approval_request_result",
+      "Next": "WaitForApproval"
     },
-    "Enable Patch Install": {
+    "WaitForApproval": {
+      "Type": "Wait",
+      "Seconds": ${timeout_seconds},
+      "Next": "CheckApprovalStatus"
+    },
+    "CheckApprovalStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.approval_status",
+          "StringEquals": "approved",
+          "Next": "ExecutePatchInstallation"
+        },
+        {
+          "Variable": "$.approval_status",
+          "StringEquals": "rejected",
+          "Next": "ApprovalRejected"
+        }
+      ],
+      "Default": "ApprovalTimeout"
+    },
+    "ExecutePatchInstallation": {
       "Type": "Task",
+      "Resource": "arn:aws:states:::http:invoke",
       "Parameters": {
-        "WindowId.$": "$.window_id",
-        "Enabled": true
+        "ApiEndpoint": "${function_url}",
+        "Method": "POST",
+        "RequestBody": {
+          "patch_group.$": "$.patch_group",
+          "maintenance_window.$": "$.maintenance_window",
+          "approval_status": "approved"
+        }
       },
-      "Resource": "arn:aws:states:::aws-sdk:ssm:updateMaintenanceWindow",
-      "Next": "Approval Success"
+      "ResultPath": "$.installation_result",
+      "Next": "NotifySuccess"
     },
-    "Approval Success": {
-      "Type": "Pass",
-      "Next": "SNS Publish Result",
-      "Result": {
-        "message": "Approval process success"
-      }
-    },
-    "Approval Timeout": {
-      "Type": "Pass",
-      "Result": {
-        "message": "Approval process timeout"
-      },
-      "End": true
-    },
-    "SNS Publish Result": {
+    "NotifySuccess": {
       "Type": "Task",
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
         "TopicArn": "${topic_arn}",
-        "Message.$": "States.JsonToString($.message)"
+        "Subject": "Patch Installation Completed Successfully",
+        "Message.$": "$.installation_result"
+      },
+      "End": true
+    },
+    "ApprovalRejected": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${topic_arn}",
+        "Subject": "Patch Installation Rejected",
+        "Message": {
+          "status": "rejected",
+          "patch_group.$": "$.patch_group",
+          "maintenance_window.$": "$.maintenance_window",
+          "message": "Patch installation was rejected by the approver"
+        }
+      },
+      "End": true
+    },
+    "ApprovalTimeout": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${topic_arn}",
+        "Subject": "Patch Installation Approval Timeout",
+        "Message": {
+          "status": "timeout",
+          "patch_group.$": "$.patch_group",
+          "maintenance_window.$": "$.maintenance_window",
+          "message": "Patch installation approval timed out after ${timeout_seconds} seconds"
+        }
       },
       "End": true
     }

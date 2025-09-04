@@ -155,6 +155,15 @@ resource "aws_iam_role" "maintenance_window_task" {
           ]
           Effect   = "Allow"
           Resource = "arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+        },
+        {
+          Action = [
+            "ec2:RebootInstances",
+            "ec2:DescribeInstances",
+            "ec2:DescribeInstanceStatus"
+          ]
+          Effect   = "Allow"
+          Resource = "*"
         }
       ]
     })
