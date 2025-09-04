@@ -46,6 +46,13 @@ resource "aws_ssm_association" "inventory" {
 }
 
 #Session Manager
+resource "aws_cloudwatch_log_group" "session_manager" {
+  #checkov:skip=CKV_AWS_158:KMS encryption handled by Session Manager document configuration
+  count             = var.session_encryption ? 1 : 0
+  name              = "/aws/sessionmanager/${var.name}"
+  retention_in_days = 365
+}
+
 resource "aws_kms_key" "ssm_session_manager" {
   count               = var.session_encryption ? 1 : 0
   description         = "KMS key for SSM Session Manager"
@@ -73,7 +80,7 @@ resource "aws_ssm_document" "session_manager_prefs" {
       s3BucketName                = ""
       s3KeyPrefix                 = ""
       s3EncryptionEnabled         = true
-      cloudWatchLogGroupName      = ""
+      cloudWatchLogGroupName      = aws_cloudwatch_log_group.session_manager[0].name
       cloudWatchEncryptionEnabled = true
       cloudWatchStreamingEnabled  = true
       idleSessionTimeout          = "20"
@@ -122,4 +129,3 @@ resource "aws_ssm_default_patch_baseline" "default" {
   baseline_id      = aws_ssm_patch_baseline.default[0].id
   operating_system = aws_ssm_patch_baseline.default[0].operating_system
 }
-
