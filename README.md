@@ -127,7 +127,6 @@ The module maintains backward compatibility with the legacy single maintenance w
 | terraform | >= 1.5 |
 | archive | >= 2.0.0 |
 | aws | >= 4.0.0 |
-| template | >= 2.0.0 |
 
 ## Providers
 
@@ -135,7 +134,6 @@ The module maintains backward compatibility with the legacy single maintenance w
 |------|---------|
 | archive | >= 2.0.0 |
 | aws | >= 4.0.0 |
-| template | >= 2.0.0 |
 
 ## Inputs
 
@@ -147,24 +145,27 @@ The module maintains backward compatibility with the legacy single maintenance w
 | approved\_patches | The list of approved patches | `list(string)` | `[]` | no |
 | classification | The list of patch classifications | `list(string)` | <pre>[<br>  "CriticalUpdates",<br>  "SecurityUpdates"<br>]</pre> | no |
 | enabled | Enable or disable the module | `bool` | `true` | no |
-| install\_cutoff | The cutoff for the patch baseline scan | `number` | `1` | no |
-| install\_duration | The duration for the patch baseline scan | `number` | `5` | no |
-| install\_max\_concurrency | The max concurrency for the patch baseline scan | `string` | `"10%"` | no |
-| install\_max\_errors | The max errors for the patch baseline scan | `string` | `"10%"` | no |
-| install\_reboot\_option | The reboot option for the patch baseline scan | `string` | `"NoReboot"` | no |
-| install\_schedule | The schedule for the patch baseline scan | `string` | `""` | no |
-| install\_timezone | The schedule timezone for the patch baseline scan | `string` | `"Australia/Melbourne"` | no |
+| install\_cutoff | DEPRECATED: Use install\_maintenance\_windows instead. The cutoff for the patch baseline install | `number` | `1` | no |
+| install\_duration | DEPRECATED: Use install\_maintenance\_windows instead. The duration for the patch baseline install | `number` | `5` | no |
+| install\_maintenance\_windows | List of maintenance windows for install operations | <pre>list(object({<br>    name            = string<br>    schedule        = string<br>    timezone        = optional(string, "Australia/Melbourne")<br>    duration        = optional(number, 5)<br>    cutoff          = optional(number, 1)<br>    max_concurrency = optional(string, "10%")<br>    max_errors      = optional(string, "10%")<br>    reboot_option   = optional(string, "NoReboot")<br>  }))</pre> | `[]` | no |
+| install\_max\_concurrency | DEPRECATED: Use install\_maintenance\_windows instead. The max concurrency for the patch baseline install | `string` | `"10%"` | no |
+| install\_max\_errors | DEPRECATED: Use install\_maintenance\_windows instead. The max errors for the patch baseline install | `string` | `"10%"` | no |
+| install\_reboot\_option | DEPRECATED: Use install\_maintenance\_windows instead. The reboot option for the patch baseline install | `string` | `"NoReboot"` | no |
+| install\_schedule | DEPRECATED: Use install\_maintenance\_windows instead. The schedule for the patch baseline install | `string` | `""` | no |
+| install\_timezone | DEPRECATED: Use install\_maintenance\_windows instead. The schedule timezone for the patch baseline install | `string` | `"Australia/Melbourne"` | no |
+| log\_retention\_in\_days | The retention period for CloudWatch logs in days | `number` | `365` | no |
 | name | The name of the patch baseline | `string` | n/a | yes |
 | notification\_arn | The SNS topic ARN for notifications | `string` | `""` | no |
 | notification\_events | The list of notification events | `list(string)` | `[]` | no |
 | operating\_system | The operating system for the patch baseline | `string` | `"WINDOWS"` | no |
 | rejected\_patches | The list of rejected patches | `list(string)` | `[]` | no |
-| scan\_cutoff | The cutoff for the patch baseline scan | `number` | `1` | no |
-| scan\_duration | The duration for the patch baseline scan | `number` | `5` | no |
-| scan\_max\_concurrency | The max concurrency for the patch baseline scan | `string` | `"20%"` | no |
-| scan\_max\_errors | The max errors for the patch baseline scan | `string` | `"20%"` | no |
-| scan\_schedule | The schedule for the patch baseline scan | `string` | `""` | no |
-| scan\_timezone | The schedule timezone for the patch baseline scan | `string` | `"Australia/Melbourne"` | no |
+| scan\_cutoff | DEPRECATED: Use scan\_maintenance\_windows instead. The cutoff for the patch baseline scan | `number` | `1` | no |
+| scan\_duration | DEPRECATED: Use scan\_maintenance\_windows instead. The duration for the patch baseline scan | `number` | `5` | no |
+| scan\_maintenance\_windows | List of maintenance windows for scan operations | <pre>list(object({<br>    name            = string<br>    schedule        = string<br>    timezone        = optional(string, "Australia/Melbourne")<br>    duration        = optional(number, 5)<br>    cutoff          = optional(number, 1)<br>    max_concurrency = optional(string, "20%")<br>    max_errors      = optional(string, "20%")<br>  }))</pre> | `[]` | no |
+| scan\_max\_concurrency | DEPRECATED: Use scan\_maintenance\_windows instead. The max concurrency for the patch baseline scan | `string` | `"20%"` | no |
+| scan\_max\_errors | DEPRECATED: Use scan\_maintenance\_windows instead. The max errors for the patch baseline scan | `string` | `"20%"` | no |
+| scan\_schedule | DEPRECATED: Use scan\_maintenance\_windows instead. The schedule for the patch baseline scan | `string` | `""` | no |
+| scan\_timezone | DEPRECATED: Use scan\_maintenance\_windows instead. The schedule timezone for the patch baseline scan | `string` | `"Australia/Melbourne"` | no |
 | session\_encryption | Enable or disable session encryption | `bool` | `true` | no |
 | severity | The list of patch severities | `list(string)` | <pre>[<br>  "Critical",<br>  "Important"<br>]</pre> | no |
 | target | The target for the patch baseline | `string` | `"tag:PatchGroup"` | no |
